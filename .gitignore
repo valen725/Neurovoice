@@ -1,0 +1,4 @@
+# Ignorar entornos virtuales y archivos grandes
+.venv/
+*.pyc
+__pycache__/
