@@ -1,12 +1,3 @@
-"""
-🔮 NeuroVoice - Sistema de Predicción Mejorado
-
-Sistema completo de predicción para Parkinson usando grabación con sounddevice.
-Basado en el datasetGenerator.py que funciona correctamente.
-
-Author: NeuroVoice Team
-"""
-
 import torch
 import numpy as np
 import pandas as pd
@@ -14,8 +5,26 @@ import librosa
 import soundfile as sf
 from pathlib import Path
 import json
-import warnings
-import time
+import war            # Cargar pesos
+            checkpoint = torch.load(model_path, map_location=self.device)
+            if 'model_state_dict' in checkpoint:
+                model.load_state_dict(checkpoint['model_state_dict'])
+                
+                # DEBUG: Mostrar información del checkpoint
+                if 'epoch' in checkpoint:
+                    print(f"🔍 Época del modelo: {checkpoint['epoch']}")
+                if 'accuracy' in checkpoint:
+                    print(f"🔍 Precisión del modelo: {checkpoint['accuracy']:.4f}")
+                if 'loss' in checkpoint:
+                    print(f"🔍 Loss del modelo: {checkpoint['loss']:.4f}")
+            else:
+                model.load_state_dict(checkpoint)
+            
+            model.to(self.device)
+            model.eval()
+            
+            print(f"✅ Modelo cargado exitosamente")
+            return model time
 import os
 warnings.filterwarnings('ignore')
 
@@ -24,10 +33,10 @@ try:
     import sounddevice as sd
     from scipy.io.wavfile import write
     AUDIO_AVAILABLE = True
-    print("✅ SoundDevice disponible para grabación")
+    print(" SoundDevice disponible para grabación")
 except ImportError:
     AUDIO_AVAILABLE = False
-    print("❌ SoundDevice no disponible. Instala con: pip install sounddevice")
+    print(" SoundDevice no disponible. Instala con: pip install sounddevice")
 
 # Imports locales
 from architecture import create_model
@@ -48,23 +57,23 @@ class SimpleAudioRecorder:
             print("💡 Instala con: pip install sounddevice")
             return None
         
-        print(f"🎤 Preparando grabación de {self.seconds} segundos...")
-        print(f"📊 Frecuencia de muestreo: {self.fs} Hz")
-        print("\n📋 Instrucciones:")
+        print(f" Preparando grabación de {self.seconds} segundos...")
+        print(f" Frecuencia de muestreo: {self.fs} Hz")
+        print("\n Instrucciones:")
         print("   • Ponte cerca del micrófono")
         print("   • Habla con volumen normal")
         print("   • Mantén la vocal 'Ahhhh' durante toda la grabación")
         
-        input("\n🔴 Presiona ENTER cuando estés listo para grabar...")
+        input("\n Presiona ENTER cuando estés listo para grabar...")
         
         try:
-            print("🔴 ¡GRABANDO! Habla ahora (mantén la vocal 'a')")
+            print(" ¡GRABANDO! Habla ahora (mantén la vocal 'a')")
             
             # Usar exactamente el mismo código que datasetGenerator.py
             audio = sd.rec(int(self.seconds * self.fs), samplerate=self.fs, channels=1, dtype='int16')
             sd.wait()
             
-            print("✅ ¡Grabación completada!")
+            print(" ¡Grabación completada!")
             
             # Convertir a float32 normalizado (como espera el modelo)
             audio_float = audio.flatten().astype(np.float32) / 32768.0
@@ -73,15 +82,15 @@ class SimpleAudioRecorder:
             max_amplitude = np.max(np.abs(audio_float))
             duration_real = len(audio_float) / self.fs
             
-            print(f"📊 Duración real: {duration_real:.2f}s")
-            print(f"📊 Nivel máximo: {max_amplitude:.3f}")
+            print(f" Duración real: {duration_real:.2f}s")
+            print(f" Nivel máximo: {max_amplitude:.3f}")
             
             if max_amplitude < 0.01:
-                print("⚠️ Audio muy silencioso, habla más fuerte")
+                print(" Audio muy silencioso, habla más fuerte")
             elif max_amplitude > 0.95:
-                print("⚠️ Audio muy fuerte, puede haber distorsión")
+                print(" Audio muy fuerte, puede haber distorsión")
             else:
-                print("✅ Nivel de audio correcto")
+                print(" Nivel de audio correcto")
             
             # Guardar copia del audio grabado
             timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
@@ -92,12 +101,12 @@ class SimpleAudioRecorder:
             
             # Guardar usando scipy (mismo método que datasetGenerator.py)
             write(temp_file, self.fs, audio)
-            print(f"💾 Audio guardado: {temp_file}")
+            print(f" Audio guardado: {temp_file}")
             
             return audio_float
             
         except Exception as e:
-            print(f"❌ Error al grabar: {e}")
+            print(f" Error al grabar: {e}")
             return None
 
 
@@ -106,7 +115,7 @@ class NeuroVoicePredictor:
     
     def __init__(self, model_path, config=None):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🖥️ Using device: {self.device}")
+        print(f" Using device: {self.device}")
         
         # Cargar configuración
         if config is None:
@@ -121,7 +130,7 @@ class NeuroVoicePredictor:
         self.label_mapping = {0: 'Healthy', 1: 'Parkinson'}
         
         # Cargar modelo
-        print(f"📥 Loading model from {model_path}")
+        print(f" Loading model from {model_path}")
         self.model = self.load_model(model_path)
         
     def load_default_config(self):
@@ -154,7 +163,7 @@ class NeuroVoicePredictor:
             model.to(self.device)
             model.eval()
             
-            print(f"✅ Modelo cargado exitosamente")
+            print(f"Modelo cargado exitosamente")
             return model
             
         except Exception as e:
@@ -243,6 +252,10 @@ class NeuroVoicePredictor:
             print(f"   MFCC shape: {mfcc.shape}")
             print(f"   Mel shape: {mel_normalized.shape}")
             
+            # DEBUG: Estadísticas de las características
+            print(f"   MFCC stats - min: {mfcc.min():.3f}, max: {mfcc.max():.3f}, mean: {mfcc.mean():.3f}")
+            print(f"   Mel stats - min: {mel_normalized.min():.3f}, max: {mel_normalized.max():.3f}, mean: {mel_normalized.mean():.3f}")
+            
             return {
                 'mfcc': mfcc,
                 'mel': mel_normalized
@@ -254,7 +267,7 @@ class NeuroVoicePredictor:
     
     def predict_live_audio(self, audio_data):
         """Predice para audio grabado en vivo"""
-        print("\n🔬 Analizando audio...")
+        print("\n Analizando audio...")
         
         # Preprocesar
         processed_audio = self.preprocess_audio(audio_data)
@@ -280,11 +293,20 @@ class NeuroVoicePredictor:
             else:  # mel
                 outputs = self.model(mel_tensor)
             
+            # DEBUG: Mostrar outputs crudos
+            print(f"🔍 Raw outputs: {outputs}")
+            print(f"🔍 Output shape: {outputs.shape}")
+            
             probabilities = torch.softmax(outputs, dim=1)
             _, predicted = torch.max(outputs, 1)
             
             prediction = predicted.cpu().numpy()[0]
             probs = probabilities.cpu().numpy()[0]
+            
+            # DEBUG: Mostrar más detalles
+            print(f"🔍 Predicted class index: {prediction}")
+            print(f"🔍 Raw probabilities: {probs}")
+            print(f"🔍 Softmax sum: {np.sum(probs):.6f}")
         
         # Interpretar resultados
         predicted_class = self.label_mapping[prediction]
@@ -304,7 +326,7 @@ class NeuroVoicePredictor:
     def predict_audio_file(self, audio_path):
         """Predice para archivo de audio"""
         try:
-            print(f"🔍 Analizando archivo: {Path(audio_path).name}")
+            print(f" Analizando archivo: {Path(audio_path).name}")
             
             # Cargar audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate)
@@ -313,7 +335,7 @@ class NeuroVoicePredictor:
             return self.predict_live_audio(audio)
             
         except Exception as e:
-            print(f"❌ Error procesando archivo: {e}")
+            print(f" Error procesando archivo: {e}")
             return None
 
 
@@ -328,10 +350,10 @@ def find_best_model():
     
     for path in model_paths:
         if Path(path).exists():
-            print(f"✅ Modelo encontrado: {path}")
+            print(f" Modelo encontrado: {path}")
             return str(Path(path).absolute())
     
-    print("❌ No se encontró modelo entrenado")
+    print(" No se encontró modelo entrenado")
     return None
 
 
@@ -360,7 +382,7 @@ def load_default_config():
             print(f"✅ Configuración cargada: {path}")
             return flat_config
     
-    print("⚠️ Usando configuración por defecto")
+    print(" Usando configuración por defecto")
     return {
         'model_type': 'hybrid',
         'architecture': 'hybrid', 
@@ -373,14 +395,14 @@ def load_default_config():
 
 def main():
     """Función principal"""
-    print("🎤 NeuroVoice - Detector de Parkinson por Voz")
+    print(" NeuroVoice - Detector de Parkinson por Voz")
     print("=" * 50)
     
     # Buscar modelo automáticamente
-    print("🔍 Buscando modelo entrenado...")
+    print(" Buscando modelo entrenado...")
     model_path = find_best_model()
     if not model_path:
-        print("💡 Entrena un modelo primero con: python model/train.py")
+        print(" Entrena un modelo primero con: python model/train.py")
         return
     
     # Cargar configuración
@@ -389,9 +411,9 @@ def main():
     # Crear predictor
     try:
         predictor = NeuroVoicePredictor(model_path, config)
-        print("✅ Sistema listo para análisis")
+        print(" Sistema listo para análisis")
     except Exception as e:
-        print(f"❌ Error inicializando sistema: {e}")
+        print(f"Error inicializando sistema: {e}")
         return
     
     # Crear grabador (usando mismo sistema que datasetGenerator.py)
@@ -403,19 +425,19 @@ def main():
     while True:
         print("\n🎵 Opciones:")
         if AUDIO_AVAILABLE:
-            print("1. 🎤 Grabar y analizar mi voz")
-            print("2. 📁 Analizar archivo de audio")
-            print("3. 👋 Salir")
+            print("1.  Grabar y analizar mi voz")
+            print("2.  Analizar archivo de audio")
+            print("3.  Salir")
         else:
-            print("1. 📁 Analizar archivo de audio")
-            print("2. 👋 Salir")
-            print("⚠️ (Grabación no disponible - instala sounddevice)")
-        
+            print("1.  Analizar archivo de audio")
+            print("2.  Salir")
+            print(" (Grabación no disponible - instala sounddevice)")
+    
         choice = input("\nSelecciona una opción: ").strip()
         
         if AUDIO_AVAILABLE and choice == "1":
             # Grabación en vivo
-            print("\n🎤 GRABACIÓN EN DIRECTO")
+            print("\nGRABACIÓN EN DIRECTO")
             print("=" * 30)
             
             audio_data = recorder.record_audio()
@@ -428,12 +450,12 @@ def main():
                     print("=" * 30)
                     
                     if result['prediction'] == 'Healthy':
-                        print("✅ El análisis sugiere voz saludable")
+                        print("El análisis sugiere voz saludable")
                     else:
-                        print("⚠️ El análisis detecta posibles indicios de Parkinson")
+                        print(" El análisis detecta posibles indicios de Parkinson")
                     
-                    print(f"\n🎯 Confianza: {result['confidence']:.1%}")
-                    print(f"📊 Probabilidades:")
+                    print(f"\n Confianza: {result['confidence']:.1%}")
+                    print(f"Probabilidades:")
                     print(f"   Healthy: {result['probabilities']['Healthy']:.1%}")
                     print(f"   Parkinson: {result['probabilities']['Parkinson']:.1%}")
                     
@@ -442,48 +464,48 @@ def main():
                     result_file = f"model/analysis_{timestamp}.json"
                     with open(result_file, 'w') as f:
                         json.dump(result, f, indent=4)
-                    print(f"\n💾 Resultado guardado: {result_file}")
+                    print(f"\n Resultado guardado: {result_file}")
                     
-                    print("\n⚠️ IMPORTANTE: Consulta con un médico profesional")
+                    print("\nIMPORTANTE: Consulta con un médico profesional")
         
         elif (AUDIO_AVAILABLE and choice == "2") or (not AUDIO_AVAILABLE and choice == "1"):
             # Análisis de archivo
-            audio_path = input("📁 Ruta del archivo de audio: ").strip()
+            audio_path = input(" Ruta del archivo de audio: ").strip()
             if audio_path and Path(audio_path).exists():
                 result = predictor.predict_audio_file(audio_path)
                 
                 if result:
-                    print("\n📊 RESULTADO DEL ANÁLISIS")
+                    print("\n RESULTADO DEL ANÁLISIS")
                     print("=" * 30)
                     
                     if result['prediction'] == 'Healthy':
-                        print("✅ El análisis sugiere voz saludable")
+                        print("El análisis sugiere voz saludable")
                     else:
-                        print("⚠️ El análisis detecta posibles indicios de Parkinson")
+                        print(" El análisis detecta posibles indicios de Parkinson")
                     
-                    print(f"\n🎯 Confianza: {result['confidence']:.1%}")
-                    print(f"📊 Probabilidades:")
-                    print(f"   Healthy: {result['probabilities']['Healthy']:.1%}")
-                    print(f"   Parkinson: {result['probabilities']['Parkinson']:.1%}")
+                    print(f"\nConfianza: {result['confidence']:.1%}")
+                    print(f"Probabilidades:")
+                    print(f"Healthy: {result['probabilities']['Healthy']:.1%}")
+                    print(f"Parkinson: {result['probabilities']['Parkinson']:.1%}")
                     
-                    print("\n⚠️ IMPORTANTE: Consulta con un médico profesional")
+                    print("\n IMPORTANTE: Consulta con un médico profesional")
             else:
-                print("❌ Archivo no encontrado")
+                print(" Archivo no encontrado")
         
         elif (AUDIO_AVAILABLE and choice == "3") or (not AUDIO_AVAILABLE and choice == "2"):
-            print("\n👋 ¡Gracias por usar NeuroVoice!")
+            print("\n ¡Gracias por usar NeuroVoice!")
             break
         else:
-            print("❌ Opción inválida")
+            print(" Opción inválida")
         
-        input("\n⏸️ Presiona ENTER para continuar...")
+        input("\nPresiona ENTER para continuar...")
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n👋 ¡Hasta luego!")
+        print("\n ¡Hasta luego!")
     except Exception as e:
         print(f"\nError: {e}")
-        print("💡 Verifica que sounddevice esté instalado: pip install sounddevice")
+        print("Verifica que sounddevice esté instalado: pip install sounddevice")

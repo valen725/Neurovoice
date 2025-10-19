@@ -27,7 +27,7 @@ class NeuroVoiceEvaluator:
     def __init__(self, config):
         self.config = config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"🖥️ Using device: {self.device}")
+        print(f"Using device: {self.device}")
         
         # Crear directorios para resultados
         self.results_dir = Path('model/evaluation_results')
@@ -40,7 +40,7 @@ class NeuroVoiceEvaluator:
     
     def load_model(self, checkpoint_path):
         """Carga el modelo desde checkpoint."""
-        print(f"📥 Loading model from {checkpoint_path}")
+        print(f"Loading model from {checkpoint_path}")
         
         # Crear modelo
         self.model = create_model(
@@ -55,7 +55,7 @@ class NeuroVoiceEvaluator:
         self.model.to(self.device)
         self.model.eval()
         
-        print(f"✅ Model loaded successfully")
+        print(f" Model loaded successfully")
         print(f"   Epoch: {checkpoint['epoch']}")
         if 'metrics' in checkpoint:
             metrics = checkpoint['metrics']
@@ -66,7 +66,7 @@ class NeuroVoiceEvaluator:
     
     def load_data(self):
         """Carga los datos de evaluación."""
-        print("📊 Loading evaluation data...")
+        print("Loading evaluation data")
         
         data_loaders = create_data_loaders(
             metadata_file=self.config['metadata_file'],
@@ -83,19 +83,19 @@ class NeuroVoiceEvaluator:
         self.val_loader = data_loaders['val']
         self.train_loader = data_loaders['train']
         
-        print(f"✅ Data loaded successfully")
+        print(f"Data loaded successfully")
         print(f"   Test samples: {len(data_loaders['datasets']['test'])}")
         print(f"   Val samples: {len(data_loaders['datasets']['val'])}")
         print(f"   Train samples: {len(data_loaders['datasets']['train'])}")
     
     def evaluate_model(self, data_loader, dataset_name="Test"):
         """Evalúa el modelo en un dataset."""
-        print(f"🧪 Evaluating on {dataset_name} set...")
+        print(f"Evaluating on {dataset_name} set")
         
         evaluator = ModelEvaluator(self.model, self.device)
         results = evaluator.evaluate_dataset(data_loader, self.class_names)
         
-        print(f"📈 {dataset_name} Results:")
+        print(f"{dataset_name} Results:")
         print(f"   Accuracy: {results['accuracy']:.2f}%")
         print(f"   AUC: {results['auc']:.4f}")
         print(f"   Loss: {results['loss']:.4f}")
@@ -104,7 +104,7 @@ class NeuroVoiceEvaluator:
     
     def generate_detailed_report(self, test_results, val_results=None):
         """Genera reporte detallado de evaluación."""
-        print("📋 Generating detailed evaluation report...")
+
         
         report = {
             'timestamp': pd.Timestamp.now().isoformat(),
@@ -130,12 +130,12 @@ class NeuroVoiceEvaluator:
         with open(report_path, 'w') as f:
             json.dump(report, f, indent=4)
         
-        print(f"💾 Detailed report saved to {report_path}")
+        print(f" Detailed report saved to {report_path}")
         return report
     
     def generate_visualizations(self, results, dataset_name="Test"):
         """Genera visualizaciones de los resultados."""
-        print(f"📊 Generating visualizations for {dataset_name} set...")
+
         
         labels = results['labels']
         predictions = results['predictions']
@@ -160,7 +160,7 @@ class NeuroVoiceEvaluator:
         # 5. Métricas por Clase
         self._plot_class_metrics(results['classification_report'], plots_dir, dataset_name)
         
-        print(f"✅ Visualizations saved to {plots_dir}")
+        print(f" Visualizations saved to {plots_dir}")
     
     def _plot_confusion_matrix(self, labels, predictions, save_dir, dataset_name):
         """Genera matriz de confusión."""
@@ -326,7 +326,7 @@ class NeuroVoiceEvaluator:
     
     def compare_with_baseline(self, results):
         """Compara resultados con baseline (modelo simple)."""
-        print("📊 Comparing with baseline (majority class)...")
+
         
         labels = results['labels']
         
@@ -351,7 +351,7 @@ class NeuroVoiceEvaluator:
     
     def run_complete_evaluation(self, checkpoint_path):
         """Ejecuta evaluación completa."""
-        print("🚀 Starting complete evaluation...")
+        print("Starting complete evaluation")
         print("=" * 60)
         
         # Cargar modelo y datos
@@ -382,14 +382,14 @@ class NeuroVoiceEvaluator:
         
         # Resumen final
         print("\n" + "=" * 60)
-        print("🎉 EVALUATION COMPLETE")
+        print(" EVALUATION COMPLETE")
         print("=" * 60)
-        print(f"📊 Test Accuracy: {test_results['accuracy']:.2f}%")
-        print(f"📊 Test AUC: {test_results['auc']:.4f}")
-        print(f"📊 Validation Accuracy: {val_results['accuracy']:.2f}%")
-        print(f"📊 Validation AUC: {val_results['auc']:.4f}")
-        print(f"📈 Improvement over baseline: {baseline_comparison['improvement']:.2f}pp")
-        print(f"📁 Results saved to: {self.results_dir}")
+        print(f" Test Accuracy: {test_results['accuracy']:.2f}%")
+        print(f" Test AUC: {test_results['auc']:.4f}")
+        print(f" Validation Accuracy: {val_results['accuracy']:.2f}%")
+        print(f" Validation AUC: {val_results['auc']:.4f}")
+        print(f" Improvement over baseline: {baseline_comparison['improvement']:.2f}pp")
+        print(f"Results saved to: {self.results_dir}")
         print("=" * 60)
         
         return report
@@ -411,10 +411,23 @@ def get_default_config():
     }
 
 
+def find_best_model():
+    """Busca el mejor modelo en ubicaciones comunes."""
+    possible_paths = [
+        "model/checkpoints/best_model.pth",
+        "checkpoints/best_model.pth", 
+        "best_model.pth"
+    ]
+    
+    for path in possible_paths:
+        if Path(path).exists():
+            return path
+    return None
+
 def main():
     parser = argparse.ArgumentParser(description='Evaluate NeuroVoice CNN')
-    parser.add_argument('--checkpoint', type=str, required=True,
-                       help='Path to model checkpoint')
+    parser.add_argument('--checkpoint', type=str, 
+                       help='Path to model checkpoint (default: finds best_model.pth automatically)')
     parser.add_argument('--config', type=str, 
                        help='Path to config JSON file')
     parser.add_argument('--metadata', type=str,
@@ -428,9 +441,24 @@ def main():
     
     args = parser.parse_args()
     
+    # Si no se especifica checkpoint, buscar best_model.pth automáticamente
+    if not args.checkpoint:
+        checkpoint_path = find_best_model()
+        if checkpoint_path:
+            print(f"Using automatically detected model: {checkpoint_path}")
+            args.checkpoint = checkpoint_path
+        else:
+            print("Error: best_model.pth not found in common locations.")
+            print("Specify the path manually with --checkpoint")
+            print("Searched locations:")
+            print("   - model/checkpoints/best_model.pth")
+            print("   - checkpoints/best_model.pth") 
+            print("   - best_model.pth")
+            return
+    
     # Verificar que el checkpoint existe
     if not Path(args.checkpoint).exists():
-        print(f"❌ Checkpoint file not found: {args.checkpoint}")
+        print(f"Error: Checkpoint file not found: {args.checkpoint}")
         return
     
     # Cargar configuración
@@ -448,10 +476,10 @@ def main():
     if args.model_type:
         config['model_type'] = args.model_type
     
-    print("📊 NeuroVoice Model Evaluation")
+    print("NeuroVoice Model Evaluation")
     print("=" * 50)
-    print(f"📥 Checkpoint: {args.checkpoint}")
-    print(f"📋 Configuration:")
+    print(f"Checkpoint: {args.checkpoint}")
+    print(f"Configuration:")
     for key, value in config.items():
         print(f"   {key}: {value}")
     print("=" * 50)
@@ -459,6 +487,13 @@ def main():
     # Crear evaluador y ejecutar evaluación
     evaluator = NeuroVoiceEvaluator(config)
     report = evaluator.run_complete_evaluation(args.checkpoint)
+    
+    print("\nEVALUATION COMPLETED")
+    print("=" * 50)
+    print("Results saved to:")
+    print("   model/evaluation_results/evaluation_report.json")
+    print("   model/evaluation_results/plots/")
+    print("=" * 50)
 
 
 if __name__ == "__main__":
