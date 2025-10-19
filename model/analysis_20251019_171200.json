@@ -1,0 +1,13 @@
+{
+    "prediction": "Healthy",
+    "original_prediction": "Healthy",
+    "confidence": 0.9528984427452087,
+    "confidence_level": "ALTA",
+    "recommendation": "Resultado confiable - Voz aparenta estar saludable",
+    "probability_difference": 0.9057968854904175,
+    "parkinson_risk_score": 0.04710158333182335,
+    "probabilities": {
+        "Healthy": 0.9528984427452087,
+        "Parkinson": 0.04710158333182335
+    }
+}

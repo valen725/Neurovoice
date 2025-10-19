@@ -28,11 +28,11 @@
     },
     "training": {
         "batch_size": 32,
-        "num_epochs": 100,
+        "num_epochs": 200,
         "learning_rate": 0.001,
         "optimizer": "adamw",
         "scheduler": "reduce_on_plateau",
-        "early_stopping_patience": 15,
+        "early_stopping_patience": 25,
         "validation_split": 0.2,
         "test_split": 0.2,
         "use_class_weights": true,

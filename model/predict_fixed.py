@@ -5,26 +5,8 @@ import librosa
 import soundfile as sf
 from pathlib import Path
 import json
-import war            # Cargar pesos
-            checkpoint = torch.load(model_path, map_location=self.device)
-            if 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
-                
-                # DEBUG: Mostrar información del checkpoint
-                if 'epoch' in checkpoint:
-                    print(f"🔍 Época del modelo: {checkpoint['epoch']}")
-                if 'accuracy' in checkpoint:
-                    print(f"🔍 Precisión del modelo: {checkpoint['accuracy']:.4f}")
-                if 'loss' in checkpoint:
-                    print(f"🔍 Loss del modelo: {checkpoint['loss']:.4f}")
-            else:
-                model.load_state_dict(checkpoint)
-            
-            model.to(self.device)
-            model.eval()
-            
-            print(f"✅ Modelo cargado exitosamente")
-            return model time
+import warnings
+import time
 import os
 warnings.filterwarnings('ignore')
 
@@ -53,8 +35,8 @@ class SimpleAudioRecorder:
     def record_audio(self):
         """Graba audio usando el mismo método que datasetGenerator.py"""
         if not AUDIO_AVAILABLE:
-            print("❌ SoundDevice no está disponible")
-            print("💡 Instala con: pip install sounddevice")
+            print(" SoundDevice no está disponible")
+            print(" Instala con: pip install sounddevice")
             return None
         
         print(f" Preparando grabación de {self.seconds} segundos...")
@@ -236,7 +218,7 @@ class NeuroVoicePredictor:
             y = audio_data['audio']
             sr = audio_data['sample_rate']
             
-            print("🧮 Extrayendo características...")
+            print(" Extrayendo características...")
             
             # MFCC
             mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=self.n_mfcc)
@@ -262,7 +244,7 @@ class NeuroVoicePredictor:
             }
             
         except Exception as e:
-            print(f"❌ Error extrayendo características: {e}")
+            print(f" Error extrayendo características: {e}")
             return None
     
     def predict_live_audio(self, audio_data):
@@ -294,8 +276,8 @@ class NeuroVoicePredictor:
                 outputs = self.model(mel_tensor)
             
             # DEBUG: Mostrar outputs crudos
-            print(f"🔍 Raw outputs: {outputs}")
-            print(f"🔍 Output shape: {outputs.shape}")
+            print(f"Raw outputs: {outputs}")
+            print(f"Output shape: {outputs.shape}")
             
             probabilities = torch.softmax(outputs, dim=1)
             _, predicted = torch.max(outputs, 1)
@@ -304,17 +286,68 @@ class NeuroVoicePredictor:
             probs = probabilities.cpu().numpy()[0]
             
             # DEBUG: Mostrar más detalles
-            print(f"🔍 Predicted class index: {prediction}")
-            print(f"🔍 Raw probabilities: {probs}")
-            print(f"🔍 Softmax sum: {np.sum(probs):.6f}")
+            print(f"Predicted class index: {prediction}")
+            print(f"Raw probabilities: {probs}")
+            print(f"Softmax sum: {np.sum(probs):.6f}")
         
-        # Interpretar resultados
-        predicted_class = self.label_mapping[prediction]
-        confidence = probs[prediction]
+        # Interpretar resultados con lógica mejorada para Parkinson
+        original_prediction = self.label_mapping[prediction]
+        original_confidence = probs[prediction]
+        
+        # Calcular la diferencia entre clases para evaluar certeza
+        prob_diff = abs(probs[0] - probs[1])
+        parkinson_prob = probs[1]  # Probabilidad de Parkinson
+        healthy_prob = probs[0]   # Probabilidad de Healthy
+        
+        print(f"Diferencia entre probabilidades: {prob_diff:.3f}")
+        print(f"Probabilidad Parkinson: {parkinson_prob:.3f}")
+        
+        # DEBUG: Mostrar qué condición se evalúa
+        print(f"DEBUG - Condiciones:")
+        print(f"   parkinson_prob >= 0.30: {parkinson_prob >= 0.30}")
+        print(f"   parkinson_prob >= 0.20: {parkinson_prob >= 0.20}")
+        print(f"   prob_diff < 0.5 and parkinson_prob >= 0.15: {prob_diff < 0.5 and parkinson_prob >= 0.15}")
+        
+        # NUEVA LÓGICA: Más sensible a Parkinson (umbrales ajustados)
+        # Si hay indicios significativos de Parkinson, alertar
+        if parkinson_prob >= 0.30:  # 30% o más de Parkinson (más sensible)
+            final_prediction = "RIESGO ALTO PARKINSON"
+            confidence_level = "ALTA"
+            recommendation = "ALERTA: Probabilidad significativa de Parkinson - Consultar especialista URGENTE"
+            final_confidence = parkinson_prob
+            print(f"CONDICIÓN ACTIVADA: RIESGO ALTO")
+        elif parkinson_prob >= 0.20:  # Entre 20% y 30% de Parkinson (más sensible)
+            final_prediction = "RIESGO MODERADO PARKINSON"
+            confidence_level = "MEDIA"
+            recommendation = "Riesgo moderado detectado - Se recomienda evaluación médica"
+            final_confidence = parkinson_prob
+            print(f"CONDICIÓN ACTIVADA: RIESGO MODERADO")
+        elif prob_diff < 0.5 and parkinson_prob >= 0.15:  # Casos ambiguos con algo de riesgo
+            final_prediction = "RESULTADO INCIERTO - POSIBLE RIESGO"
+            confidence_level = "BAJA"
+            recommendation = "Resultado ambiguo con posible riesgo - Repetir análisis y consultar médico"
+            final_confidence = max(healthy_prob, parkinson_prob)
+            print(f"CONDICIÓN ACTIVADA: POSIBLE RIESGO")
+        else:
+            # Solo si es muy claro que es saludable
+            final_prediction = "Healthy"
+            if prob_diff > 0.6:
+                confidence_level = "ALTA"
+                recommendation = "Resultado confiable - Voz aparenta estar saludable"
+            else:
+                confidence_level = "MEDIA"
+                recommendation = "Resultado moderadamente confiable"
+            final_confidence = healthy_prob
+            print(f"CONDICIÓN ACTIVADA: HEALTHY (ninguna condición de riesgo cumplida)")
         
         result = {
-            'prediction': predicted_class,
-            'confidence': float(confidence),
+            'prediction': final_prediction,
+            'original_prediction': original_prediction,
+            'confidence': float(final_confidence),
+            'confidence_level': confidence_level,
+            'recommendation': recommendation,
+            'probability_difference': float(prob_diff),
+            'parkinson_risk_score': float(parkinson_prob),
             'probabilities': {
                 'Healthy': float(probs[0]),
                 'Parkinson': float(probs[1])
@@ -379,7 +412,7 @@ def load_default_config():
                 'feature_type': 'both'
             }
             
-            print(f"✅ Configuración cargada: {path}")
+            print(f"Configuración cargada: {path}")
             return flat_config
     
     print(" Usando configuración por defecto")
@@ -423,7 +456,7 @@ def main():
     
     # Loop principal
     while True:
-        print("\n🎵 Opciones:")
+        print("\n Opciones:")
         if AUDIO_AVAILABLE:
             print("1.  Grabar y analizar mi voz")
             print("2.  Analizar archivo de audio")
@@ -446,18 +479,33 @@ def main():
                 result = predictor.predict_live_audio(audio_data)
                 
                 if result:
-                    print("\n📊 RESULTADO DEL ANÁLISIS")
-                    print("=" * 30)
+                    print("\n RESULTADO DEL ANÁLISIS AVANZADO")
+                    print("=" * 40)
                     
-                    if result['prediction'] == 'Healthy':
-                        print("El análisis sugiere voz saludable")
+                    # Mostrar resultado principal con colores/símbolos
+                    if "Healthy" in result['prediction']:
+                        print(f" {result['prediction']}")
+                    elif "RIESGO ALTO" in result['prediction']:
+                        print(f" {result['prediction']}")
+                    elif "RIESGO MODERADO" in result['prediction']:
+                        print(f" {result['prediction']}")
+                    elif "INCIERTO" in result['prediction']:
+                        print(f" {result['prediction']}")
                     else:
-                        print(" El análisis detecta posibles indicios de Parkinson")
+                        print(f" {result['prediction']}")
                     
                     print(f"\n Confianza: {result['confidence']:.1%}")
-                    print(f"Probabilidades:")
+                    print(f" Nivel de confianza: {result['confidence_level']}")
+                    print(f" Score de riesgo Parkinson: {result['parkinson_risk_score']:.1%}")
+                    print(f" Recomendación: {result['recommendation']}")
+                    print(f" Diferencia entre probabilidades: {result['probability_difference']:.1%}")
+                    
+                    print(f"\nProbabilidades detalladas:")
                     print(f"   Healthy: {result['probabilities']['Healthy']:.1%}")
                     print(f"   Parkinson: {result['probabilities']['Parkinson']:.1%}")
+                    
+                    if 'original_prediction' in result:
+                        print(f"\n Predicción original del modelo: {result['original_prediction']}")
                     
                     # Guardar resultado
                     timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
@@ -466,7 +514,7 @@ def main():
                         json.dump(result, f, indent=4)
                     print(f"\n Resultado guardado: {result_file}")
                     
-                    print("\nIMPORTANTE: Consulta con un médico profesional")
+                    print("\nIMPORTANTE: Este análisis es solo una herramienta de apoyo")
         
         elif (AUDIO_AVAILABLE and choice == "2") or (not AUDIO_AVAILABLE and choice == "1"):
             # Análisis de archivo
@@ -475,20 +523,35 @@ def main():
                 result = predictor.predict_audio_file(audio_path)
                 
                 if result:
-                    print("\n RESULTADO DEL ANÁLISIS")
-                    print("=" * 30)
+                    print("\n RESULTADO DEL ANÁLISIS AVANZADO")
+                    print("=" * 40)
                     
-                    if result['prediction'] == 'Healthy':
-                        print("El análisis sugiere voz saludable")
+                    # Mostrar resultado principal con colores/símbolos
+                    if "Healthy" in result['prediction']:
+                        print(f" {result['prediction']}")
+                    elif "RIESGO ALTO" in result['prediction']:
+                        print(f" {result['prediction']}")
+                    elif "RIESGO MODERADO" in result['prediction']:
+                        print(f"{result['prediction']}")
+                    elif "INCIERTO" in result['prediction']:
+                        print(f" {result['prediction']}")
                     else:
-                        print(" El análisis detecta posibles indicios de Parkinson")
+                        print(f" {result['prediction']}")
                     
-                    print(f"\nConfianza: {result['confidence']:.1%}")
-                    print(f"Probabilidades:")
-                    print(f"Healthy: {result['probabilities']['Healthy']:.1%}")
-                    print(f"Parkinson: {result['probabilities']['Parkinson']:.1%}")
+                    print(f"\n Confianza: {result['confidence']:.1%}")
+                    print(f" Nivel de confianza: {result['confidence_level']}")
+                    print(f" Score de riesgo Parkinson: {result['parkinson_risk_score']:.1%}")
+                    print(f" Recomendación: {result['recommendation']}")
+                    print(f" Diferencia entre probabilidades: {result['probability_difference']:.1%}")
                     
-                    print("\n IMPORTANTE: Consulta con un médico profesional")
+                    print(f"\n Probabilidades detalladas:")
+                    print(f"   Healthy: {result['probabilities']['Healthy']:.1%}")
+                    print(f"   Parkinson: {result['probabilities']['Parkinson']:.1%}")
+                    
+                    if 'original_prediction' in result:
+                        print(f"\n Predicción original del modelo: {result['original_prediction']}")
+                    
+                    print("\n IMPORTANTE: Este análisis es solo una herramienta de apoyo")
             else:
                 print(" Archivo no encontrado")
         
