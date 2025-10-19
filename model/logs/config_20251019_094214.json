@@ -1,0 +1,22 @@
+{
+    "metadata_file": "data/metadata/metadata_features_final.csv",
+    "batch_size": 16,
+    "test_size": 0.2,
+    "validation_size": 0.2,
+    "feature_type": "both",
+    "augment_train": true,
+    "num_workers": 4,
+    "model_type": "hybrid",
+    "num_classes": 2,
+    "dropout_rate": 0.3,
+    "num_epochs": 30,
+    "learning_rate": 0.001,
+    "optimizer": "adamw",
+    "scheduler": "reduce_on_plateau",
+    "weight_decay": 0.01,
+    "gradient_clipping": 1.0,
+    "use_class_weights": true,
+    "early_stopping_patience": 15,
+    "early_stopping_min_delta": 0.001,
+    "random_state": 42
+}
