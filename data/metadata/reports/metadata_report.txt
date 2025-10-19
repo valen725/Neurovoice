@@ -1,0 +1,16 @@
+Reporte de Metadata — 2025-10-19 08:50:44.477081
+============================================================
+Root: /home/valentina/NeuroVoice/data/raw
+CSV:  /home/valentina/NeuroVoice/data/metadata/metadata_master.csv
+
+Total de archivos: 80
+Archivos válidos:  80
+Archivos inválidos: 0
+Distribución por clase: {'healthy': 40, 'parkinson': 40}
+
+Duración (s) — válidos:
+  min:    1.5161
+  max:    7.2080
+  mean:   3.3414
+  median: 3.1415
+

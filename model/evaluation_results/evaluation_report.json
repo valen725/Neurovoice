@@ -1,0 +1,84 @@
+{
+    "timestamp": "2025-10-19T14:58:25.985022",
+    "model_config": {
+        "metadata_file": "data/metadata/metadata_features_final.csv",
+        "batch_size": 32,
+        "test_size": 0.2,
+        "validation_size": 0.2,
+        "feature_type": "both",
+        "model_type": "hybrid",
+        "num_classes": 2,
+        "dropout_rate": 0.3,
+        "num_workers": 4,
+        "random_state": 42
+    },
+    "test_results": {
+        "accuracy": 75.0,
+        "auc": 0.7775,
+        "loss": 0.5874379873275757,
+        "classification_report": {
+            "Healthy": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1-score": 0.75,
+                "support": 20.0
+            },
+            "Parkinson": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1-score": 0.75,
+                "support": 20.0
+            },
+            "accuracy": 0.75,
+            "macro avg": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1-score": 0.75,
+                "support": 40.0
+            },
+            "weighted avg": {
+                "precision": 0.75,
+                "recall": 0.75,
+                "f1-score": 0.75,
+                "support": 40.0
+            }
+        }
+    },
+    "validation_results": {
+        "accuracy": 93.75,
+        "auc": 0.96875,
+        "loss": 0.32511407136917114,
+        "classification_report": {
+            "Healthy": {
+                "precision": 0.8888888888888888,
+                "recall": 1.0,
+                "f1-score": 0.9411764705882353,
+                "support": 16.0
+            },
+            "Parkinson": {
+                "precision": 1.0,
+                "recall": 0.875,
+                "f1-score": 0.9333333333333333,
+                "support": 16.0
+            },
+            "accuracy": 0.9375,
+            "macro avg": {
+                "precision": 0.9444444444444444,
+                "recall": 0.9375,
+                "f1-score": 0.9372549019607843,
+                "support": 32.0
+            },
+            "weighted avg": {
+                "precision": 0.9444444444444444,
+                "recall": 0.9375,
+                "f1-score": 0.9372549019607843,
+                "support": 32.0
+            }
+        }
+    },
+    "baseline_comparison": {
+        "baseline_accuracy": 50.0,
+        "model_accuracy": 75.0,
+        "improvement": 25.0
+    }
+}
