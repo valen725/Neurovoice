@@ -247,12 +247,13 @@ class NeuroVoicePredictor:
             print(f" Error extrayendo características: {e}")
             return None
     
-    def predict_live_audio(self, audio_data, threshold_parkinson=0.3):
+    def predict_live_audio(self, audio_data, threshold_parkinson=0.5):
         """Predice para audio grabado en vivo"""
         print("\n Analizando audio...")
 
         # Preprocesar
         processed_audio = self.preprocess_audio(audio_data)
+        print(f"[DEBUG] Audio procesado: duración={processed_audio['duration']:.3f}s, max={np.max(np.abs(processed_audio['audio'])):.3f}, min={np.min(processed_audio['audio']):.3f}")
 
         # Extraer características
         features = self.extract_features(processed_audio)
@@ -265,7 +266,6 @@ class NeuroVoicePredictor:
 
         mfcc_tensor = mfcc_tensor.to(self.device)
         mel_tensor = mel_tensor.to(self.device)
-
 
         # Predicción
         with torch.no_grad():
@@ -282,11 +282,7 @@ class NeuroVoicePredictor:
             healthy_prob = probs[0]
             prob_diff = abs(healthy_prob - parkinson_prob)
 
-            # Ajuste de umbral: si la probabilidad de Parkinson supera el threshold, predecir Parkinson
-            if parkinson_prob >= threshold_parkinson:
-                prediction = 1
-            else:
-                prediction = 0
+        print(f"[DEBUG] Probabilidades: Healthy={healthy_prob:.4f}, Parkinson={parkinson_prob:.4f}, diff={prob_diff:.4f}")
 
         original_prediction = self.label_mapping[np.argmax(probs)]
 
