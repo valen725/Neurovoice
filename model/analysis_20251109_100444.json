@@ -1,0 +1,13 @@
+{
+    "prediction": "VOZ SALUDABLE",
+    "original_prediction": "Healthy",
+    "confidence": 0.8446139097213745,
+    "confidence_level": "ALTA",
+    "explanation": "El modelo considera que la voz es saludable con alta confianza. No se detectan se\u00f1ales relevantes de Parkinson.",
+    "probability_difference": 0.6892277598381042,
+    "parkinson_risk_score": 0.15538613498210907,
+    "probabilities": {
+        "Healthy": 0.8446139097213745,
+        "Parkinson": 0.15538613498210907
+    }
+}

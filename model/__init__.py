@@ -80,6 +80,7 @@ class NeuroVoiceConfig:
         if config_file and Path(config_file).exists():
             self.load_config(config_file)
     
+     
     def _setup_logging(self):
         """Setup logging configuration."""
         log_level = getattr(logging, self.config["system"]["log_level"], logging.WARNING)

@@ -39,7 +39,7 @@ class NeuroVoiceCNN(nn.Module):
             nn.AdaptiveAvgPool2d((4, 6)),  # (128, 4, 6) - Tamaño fijo
             nn.Dropout2d(dropout_rate),
         )
-        
+        self.mel_lstm_dropout = nn.Dropout(0.5)
         # === RAMA MEL-SPECTROGRAM (128 x 94) ===
         self.mel_branch = nn.Sequential(
             # Bloque Convolucional 1
@@ -71,29 +71,35 @@ class NeuroVoiceCNN(nn.Module):
             nn.Dropout2d(dropout_rate),
         )
         
-        # === FUSIÓN Y CLASIFICACIÓN ===
-        # MFCC features: 128 * 4 * 6 = 3072
-        # Mel features:  256 * 4 * 6 = 6144
-        # Total features: 3072 + 6144 = 9216
-        
+        # === LSTM en la rama Mel ===
+        # Entrada LSTM: secuencia de longitud 4, cada paso con 256*6 características.
+        self.mel_lstm = nn.LSTM(
+            input_size=256*6,
+            hidden_size=256,
+            num_layers=2,
+            batch_first=True,
+            bidirectional=True
+        )
+
+        # Cambiar fusión porque ahora mel_branch produce 256*2 = 512 en vez de 6144
         self.fusion_layers = nn.Sequential(
-            nn.Linear(3072 + 6144, 512),
+            nn.Linear(3072 + 512, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_rate),
-            
+
             nn.Linear(512, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_rate),
-            
+
             nn.Linear(128, 64),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_rate * 0.5),
-            
+
             nn.Linear(64, num_classes)
         )
-        
+
         # Inicialización de pesos
         self._initialize_weights()
     
@@ -125,17 +131,20 @@ class NeuroVoiceCNN(nn.Module):
         # Procesar rama MFCC
         mfcc_features = self.mfcc_branch(mfcc_input)
         mfcc_flat = mfcc_features.view(mfcc_features.size(0), -1)
-        
-        # Procesar rama Mel-spectrogram
-        mel_features = self.mel_branch(mel_input)
-        mel_flat = mel_features.view(mel_features.size(0), -1)
-        
-        # Fusionar características
-        combined_features = torch.cat([mfcc_flat, mel_flat], dim=1)
-        
+
+        # Procesar rama Mel-spectrogram (CNN)
+        mel_features = self.mel_branch(mel_input)  # (B,256,4,6)
+        B, C, H, W = mel_features.shape  # (B,256,4,6)
+        mel_seq = mel_features.permute(0, 2, 1, 3).reshape(B, H, C*W)  # (B,4,256*6)
+        mel_lstm_out, _ = self.mel_lstm(mel_seq)  # (B,4,256)
+        mel_out = mel_lstm_out[:, -1, :]  # Tomamos último paso temporal → (B,256)
+        mel_out = self.mel_lstm_dropout(mel_out)
+
+        # Fusión MFCC + Mel-RNN
+        combined = torch.cat([mfcc_flat, mel_out], dim=1)
+
         # Clasificación final
-        output = self.fusion_layers(combined_features)
-        
+        output = self.fusion_layers(combined)
         return output
     
     def get_feature_maps(self, mfcc_input, mel_input):

@@ -1,4 +1,4 @@
-Reporte de Metadata — 2025-10-19 08:50:44.477081
+Reporte de Metadata — 2025-11-09 09:55:18.871459
 ============================================================
 Root: /home/valentina/NeuroVoice/data/raw
 CSV:  /home/valentina/NeuroVoice/data/metadata/metadata_master.csv

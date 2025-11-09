@@ -1,17 +1,17 @@
 {
     "test_accuracy": 93.75,
-    "test_auc": 0.96875,
+    "test_auc": 0.9609375,
     "classification_report": {
         "Healthy": {
-            "precision": 0.8888888888888888,
-            "recall": 1.0,
-            "f1-score": 0.9411764705882353,
-            "support": 16.0
-        },
-        "Parkinson": {
             "precision": 1.0,
             "recall": 0.875,
             "f1-score": 0.9333333333333333,
+            "support": 16.0
+        },
+        "Parkinson": {
+            "precision": 0.8888888888888888,
+            "recall": 1.0,
+            "f1-score": 0.9411764705882353,
             "support": 16.0
         },
         "accuracy": 0.9375,
@@ -28,7 +28,7 @@
             "support": 32.0
         }
     },
-    "best_epoch": 29,
+    "best_epoch": 24,
     "best_val_accuracy": 93.75,
-    "best_val_auc": 0.96875
+    "best_val_auc": 0.9609375
 }
