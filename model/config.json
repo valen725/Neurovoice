@@ -1,0 +1,71 @@
+{
+    "project": {
+        "name": "NeuroVoice",
+        "version": "1.0.0",
+        "description": "Parkinson detection through voice analysis using CNN",
+        "author": "NeuroVoice Team"
+    },
+    "data": {
+        "raw_path": "data/raw",
+        "processed_path": "data/processed",
+        "features_path": "data/features_final",
+        "final_path": "data/final_for_training",
+        "metadata_path": "data/metadata",
+        "target_sample_rate": 16000,
+        "target_duration": 3.0,
+        "feature_types": [
+            "mfcc",
+            "mel"
+        ]
+    },
+    "model": {
+        "architecture": "hybrid",
+        "num_classes": 2,
+        "dropout_rate": 0.3,
+        "checkpoints_path": "model/checkpoints",
+        "results_path": "model/results",
+        "logs_path": "model/logs"
+    },
+    "training": {
+        "batch_size": 32,
+        "num_epochs": 100,
+        "learning_rate": 0.001,
+        "optimizer": "adamw",
+        "scheduler": "reduce_on_plateau",
+        "early_stopping_patience": 15,
+        "validation_split": 0.2,
+        "test_split": 0.2,
+        "use_class_weights": true,
+        "augment_data": true,
+        "use_focal_loss": true,
+        "focal_gamma": 2.0,
+        "use_weighted_sampler": true
+    },
+    "features": {
+        "mfcc": {
+            "n_mfcc": 20,
+            "n_fft": 1024,
+            "hop_length": 512
+        },
+        "mel": {
+            "n_mels": 128,
+            "n_fft": 1024,
+            "hop_length": 512
+        }
+    },
+    "evaluation": {
+        "metrics": [
+            "accuracy",
+            "auc",
+            "precision",
+            "recall",
+            "f1"
+        ],
+        "generate_plots": true,
+        "save_predictions": true
+    },
+    "system": {
+        "verbose": false,
+        "log_level": "WARNING"
+    }
+}

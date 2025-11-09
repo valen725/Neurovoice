@@ -1,3 +1,13 @@
+
+
+import os
+import numpy as np
+import torch
+import librosa
+from pathlib import Path
+import json
+from model.architecture import create_model
+
 def load_default_config():
     """Carga configuración por defecto (idéntico a predict_fixed.py)"""
     config_paths = [
@@ -29,15 +39,6 @@ def load_default_config():
         'feature_type': 'both'
     }
 
-import os
-import numpy as np
-import torch
-import librosa
-from pathlib import Path
-import json
-from model.architecture import create_model
-
-
 def find_best_model():
     """Encuentra el mejor modelo disponible (igual que predict_fixed.py)"""
     model_paths = [
@@ -54,7 +55,24 @@ def find_best_model():
     return None
 
 
-def predict_from_file_or_array(model_path, audio_input, config=None, threshold_parkinson=0.5, robust=False, augmentations=4):
+def _load_calibrated_threshold(default: float = 0.3) -> float:
+    """Intenta cargar threshold calibrado (best F1) desde JSON.
+    Si no existe o falla, retorna default.
+    """
+    calib_path = Path("model/results/calibration_threshold.json")
+    if calib_path.exists():
+        try:
+            with open(calib_path, 'r') as f:
+                data = json.load(f)
+            thr = data.get('best_f1_threshold') or data.get('best_youden_threshold')
+            if isinstance(thr, (float, int)) and 0.0 < thr < 1.0:
+                print(f" Umbral calibrado cargado (F1): {thr:.4f}")
+                return float(thr)
+        except Exception as e:
+            print(f" Error cargando calibración de threshold: {e}")
+    return default
+
+def predict_from_file_or_array(model_path, audio_input, config=None, threshold_parkinson=None, robust=False, augmentations=4):
     """Predice desde archivo o array.
     Parámetros:
       threshold_parkinson: umbral base para decidir riesgo.
@@ -68,6 +86,8 @@ def predict_from_file_or_array(model_path, audio_input, config=None, threshold_p
         y = audio_input
     else:
         raise ValueError("audio_input debe ser ruta de archivo o np.ndarray")
+    if threshold_parkinson is None:
+        threshold_parkinson = _load_calibrated_threshold()
     if robust:
         return predictor.predict_robust(y, threshold_parkinson=threshold_parkinson, n_augment=augmentations)
     return predictor.predict(y, threshold_parkinson=threshold_parkinson)
@@ -165,7 +185,9 @@ class NeuroVoicePredictor:
             'mel': mel_normalized
         }
 
-    def predict(self, audio_data, threshold_parkinson=0.5):
+    def predict(self, audio_data, threshold_parkinson=None):
+        if threshold_parkinson is None:
+            threshold_parkinson = _load_calibrated_threshold(0.3)
         processed_audio = self.preprocess_audio(audio_data)
         print(f"[DEBUG] Audio procesado: duración={processed_audio['duration']:.3f}s, max={np.max(np.abs(processed_audio['audio'])):.3f}, min={np.min(processed_audio['audio']):.3f}")
         features = self.extract_features(processed_audio)
@@ -244,10 +266,12 @@ class NeuroVoicePredictor:
         }
         return result
 
-    def predict_robust(self, audio_data, threshold_parkinson=0.55, n_augment=4):
+    def predict_robust(self, audio_data, threshold_parkinson=None, n_augment=4):
         """Promedia varias predicciones con pequeñas variaciones para mayor estabilidad.
         Mantiene siempre la misma longitud de señal (evita fix_length).
         """
+        if threshold_parkinson is None:
+            threshold_parkinson = _load_calibrated_threshold(0.3)
         base = self.predict(audio_data, threshold_parkinson=threshold_parkinson)
         if base is None:
             return None

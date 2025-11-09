@@ -1,0 +1,7 @@
+{
+    "best_youden_threshold": 0.5902450680732727,
+    "best_youden_score": 0.875,
+    "best_f1_threshold": 0.43931689858436584,
+    "best_f1_score": 0.9411764705882353,
+    "num_samples": 32
+}

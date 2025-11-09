@@ -42,7 +42,10 @@ DEFAULT_CONFIG = {
         "validation_split": 0.2,
         "test_split": 0.2,
         "use_class_weights": True,
-        "augment_data": True
+        "augment_data": True,
+        "use_focal_loss": True,
+        "focal_gamma": 2.0,
+        "use_weighted_sampler": True
     },
     "features": {
         "mfcc": {
@@ -130,7 +133,10 @@ class NeuroVoiceConfig:
                 "use_class_weights": training.get("use_class_weights", True),
                 "augment_train": training.get("augment_data", True),
                 "weight_decay": training.get("weight_decay", 1e-4),
-                "gradient_clipping": training.get("gradient_clipping", 1.0)
+                "gradient_clipping": training.get("gradient_clipping", 1.0),
+                "use_focal_loss": training.get("use_focal_loss", False),
+                "focal_gamma": training.get("focal_gamma", 2.0),
+                "use_weighted_sampler": training.get("use_weighted_sampler", False)
             })
         
         if "model" in nested_config:
@@ -325,6 +331,9 @@ class NeuroVoiceConfig:
             'weight_decay': 0.01,
             'gradient_clipping': 1.0,
             'use_class_weights': self.get('training.use_class_weights'),
+            'use_focal_loss': self.get('training.use_focal_loss'),
+            'focal_gamma': self.get('training.focal_gamma'),
+            'use_weighted_sampler': self.get('training.use_weighted_sampler'),
             'early_stopping_patience': self.get('training.early_stopping_patience'),
             'early_stopping_min_delta': 0.001,
             'augment_train': self.get('training.augment_data'),

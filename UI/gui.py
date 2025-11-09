@@ -106,8 +106,8 @@ class NeuroVoiceWindow(QMainWindow):
         g_inf = QGroupBox("Análisis de Voz")
         l_inf = QVBoxLayout(g_inf)
 
-        # Umbral fijo interno (el usuario no lo modifica)
-        self.threshold_parkinson = 0.5
+        # Umbral fijo interno (el usuario no lo modifica) ajustado a 0.3 para mayor sensibilidad
+        self.threshold_parkinson = 0.3
 
         self.robust_checkbox = QCheckBox("Modo robusto (promediar)")
         self.robust_checkbox.setChecked(True)
@@ -265,7 +265,8 @@ class NeuroVoiceWindow(QMainWindow):
             return
         try:
             # Umbral fijo y modo robusto opcional
-            threshold = self.threshold_parkinson
+            # Usar umbral calibrado por defecto (inference lo cargará si pasamos None)
+            threshold = None
             robust = self.robust_checkbox.isChecked()
             self.last_result = predict_from_file_or_array(self.model_path, self.raw_audio, self.config, threshold_parkinson=threshold, robust=robust)
             result = self.last_result
