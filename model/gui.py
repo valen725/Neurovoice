@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import soundfile as sf
-from UI.audio_io import Recorder, Player, save_wav_16k
+from audio_io import Recorder, Player, save_wav_16k
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QPushButton, QLabel, QFileDialog,
