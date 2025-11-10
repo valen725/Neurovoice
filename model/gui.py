@@ -55,7 +55,7 @@ class NeuroVoiceWindow(QMainWindow):
         self.last_saved_path = None
 
         # Ruta al mejor modelo disponible (igual que predict_fixed.py)
-        from .inference import find_best_model
+        from inference import find_best_model
         self.model_path = find_best_model()
         if not self.model_path:
             QMessageBox.critical(self, "Modelo no encontrado", "No se encontró un modelo entrenado. Entrena uno primero.")
