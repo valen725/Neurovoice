@@ -15,10 +15,10 @@ from matplotlib.backends.backend_qtagg import (
 )
 import matplotlib.pyplot as plt
 
-from .audio_io import Recorder, Player, save_wav_16k
-from .preprocess import preprocess_wav_for_model, mel_spectrogram_db
-from .inference import predict_from_file_or_array
-from .gradcam import gradcam_overlay_placeholder
+from audio_io import Recorder, Player, save_wav_16k
+from preprocess import preprocess_wav_for_model, mel_spectrogram_db
+from inference import predict_from_file_or_array
+from gradcam import gradcam_overlay_placeholder
 
 # mplcursors es opcional (para ver valores al pasar el ratón)
 try:
