@@ -1,4 +1,5 @@
 import os
+import librosa
 import numpy as np
 import soundfile as sf
 from audio_io import Recorder, Player, save_wav_16k
@@ -44,7 +45,7 @@ class RecordThread(QThread):
         self.finished.emit(audio, self.samplerate)
 
 class NeuroVoiceWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, config):
         super().__init__()
         self.setWindowTitle("NeuroVoice — Parkinson Voice Screening (Demo)")
         self.resize(1280, 800)
@@ -53,13 +54,13 @@ class NeuroVoiceWindow(QMainWindow):
         self.raw_audio = None
         self.raw_sr = None
         self.last_saved_path = None
+        self.config = config
 
         # Ruta al mejor modelo disponible (igual que predict_fixed.py)
         from inference import find_best_model
         self.model_path = find_best_model()
         if not self.model_path:
             QMessageBox.critical(self, "Modelo no encontrado", "No se encontró un modelo entrenado. Entrena uno primero.")
-        self.config = None  # O carga config si lo deseas
 
         # UI
         self._build_ui()
@@ -87,20 +88,24 @@ class NeuroVoiceWindow(QMainWindow):
         self.seconds_lbl = QLabel("Duration: 3 s")
         self.seconds.valueChanged.connect(lambda v: self.seconds_lbl.setText(f"Duration: {v} s"))
 
-        self.btn_record = QPushButton("● Record")
+        self.btn_record = QPushButton("● Grabar audio")
         self.btn_record.clicked.connect(self.on_record)
 
-        self.btn_play = QPushButton("▶ Play (raw)")
+        self.btn_play = QPushButton("▶ Reproducir audio")
         self.btn_play.clicked.connect(self.on_play_raw)
 
-        self.btn_load = QPushButton("📂 Load WAV")
+        self.btn_load = QPushButton("📂 Cargar audio (WAV)")
         self.btn_load.clicked.connect(self.on_load_wav)
+
+        self.btn_save = QPushButton("💾 Guardar audio (WAV)")
+        self.btn_save.clicked.connect(self.on_save)
 
         l_rec.addWidget(self.seconds_lbl)
         l_rec.addWidget(self.seconds)
         l_rec.addWidget(self.btn_record)
         l_rec.addWidget(self.btn_play)
         l_rec.addWidget(self.btn_load)
+        l_rec.addWidget(self.btn_save)
 
         # Grupo: Inference (sin controles avanzados para el usuario)
         g_inf = QGroupBox("Análisis de Voz")
@@ -210,14 +215,23 @@ class NeuroVoiceWindow(QMainWindow):
             dlg = QFileDialog(self, "Open WAV", "data", "WAV files (*.wav)")
             if dlg.exec():
                 path = dlg.selectedFiles()[0]
-                y, sr = sf.read(path, dtype="float32", always_2d=False)
-                if y.ndim > 1:
-                    y = y.mean(axis=1)
-                self.raw_audio, self.raw_sr = y, sr
-                self._plot_wave(self.raw_audio, self.raw_sr, title=f"Raw audio (loaded)")
+                #codigo nuevo
+                config_sample_rate = self.config.get('sample_rate', 16000)
+                print("Loading with librosa:", path)
+                print("Config sample rate:", config_sample_rate)
+                audio, sr = librosa.load(path, sr=config_sample_rate)
+                print("audio: ", audio)
+                print("sr: ", sr)
+
+                # codigo viejo
+                # y, sr = sf.read(path, dtype="float32", always_2d=False)
+                # if y.ndim > 1:
+                #     y = y.mean(axis=1)
+                self.raw_audio, self.raw_sr = audio, sr
+                self._plot_wave(audio, sr, title=f"Raw audio (loaded)")
                 QMessageBox.information(
                     self, "Loaded",
-                    f"Loaded {os.path.basename(path)}\nSamplerate: {sr} Hz\nDuration: {len(y)/sr:.2f} s"
+                    f"Loaded {os.path.basename(path)}\nSamplerate: {sr} Hz\nDuration: {len(audio)/sr:.2f} s"
                 )
         except Exception as e:
             QMessageBox.critical(self, "Error loading WAV", str(e))
@@ -246,7 +260,7 @@ class NeuroVoiceWindow(QMainWindow):
 
     def on_save(self):
         if self.raw_audio is None:
-            QMessageBox.warning(self, "Nothing to save", "Graba o carga un audio primero.")
+            QMessageBox.warning(self, "Audio no encontrado", "Graba o carga un audio primero.")
             return
         dlg = QFileDialog(self, "Save WAV", DATA_DIR, "WAV files (*.wav)")
         dlg.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -255,9 +269,9 @@ class NeuroVoiceWindow(QMainWindow):
             try:
                 save_wav_16k(path, self.raw_audio, self.raw_sr)
                 self.last_saved_path = path
-                QMessageBox.information(self, "Saved", f"Saved {path}")
+                QMessageBox.information(self, "Guardado", f"Guardado en {path}")
             except Exception as e:
-                QMessageBox.critical(self, "Save error", str(e))
+                QMessageBox.critical(self, "Error de guardado", str(e))
 
     def on_predict(self):
         if self.raw_audio is None:
