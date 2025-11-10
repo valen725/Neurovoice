@@ -22,11 +22,10 @@ from inference import predict_from_file_or_array
 from gradcam import gradcam_overlay_placeholder
 
 # mplcursors es opcional (para ver valores al pasar el ratón)
-try:
-    import mplcursors
-    MPLCURSORS_AVAILABLE = True
-except Exception:
-    MPLCURSORS_AVAILABLE = False
+# import mplcursors
+# MPLCURSORS_AVAILABLE_WAVE = True
+# MPLCURSORS_AVAILABLE_HEAT = True
+
 
 DATA_DIR = os.path.join("data", "recordings")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -55,6 +54,7 @@ class NeuroVoiceWindow(QMainWindow):
         self.raw_sr = None
         self.last_saved_path = None
         self.config = config
+        self.draw_bar = True  # para dibujar la barra de color solo una vez
 
         # Ruta al mejor modelo disponible (igual que predict_fixed.py)
         from inference import find_best_model
@@ -217,11 +217,7 @@ class NeuroVoiceWindow(QMainWindow):
                 path = dlg.selectedFiles()[0]
                 #codigo nuevo
                 config_sample_rate = self.config.get('sample_rate', 16000)
-                print("Loading with librosa:", path)
-                print("Config sample rate:", config_sample_rate)
                 audio, sr = librosa.load(path, sr=config_sample_rate)
-                print("audio: ", audio)
-                print("sr: ", sr)
 
                 # codigo viejo
                 # y, sr = sf.read(path, dtype="float32", always_2d=False)
@@ -388,13 +384,13 @@ class NeuroVoiceWindow(QMainWindow):
             QMessageBox.critical(self, "Error al exportar PDF", str(e))
 
     def on_gradcam(self):
-        if self.proc_audio is None:
+        if self.raw_audio is None:
             QMessageBox.warning(self, "No input", "Preprocess first.")
             return
         try:
-            mel_db = mel_spectrogram_db(self.proc_audio, self.proc_sr)
-            overlay = gradcam_overlay_placeholder(mel_db)  # HxW heatmap [0,1]
-            self._plot_spec(mel_db, overlay=overlay)
+            mel_db = mel_spectrogram_db(self.raw_audio, self.raw_sr)
+            # overlay = gradcam_overlay_placeholder(mel_db)  # HxW heatmap [0,1]
+            self._plot_spec(mel_db, overlay=None)
         except Exception as e:
             QMessageBox.critical(self, "Grad-CAM error", str(e))
 
@@ -414,8 +410,10 @@ class NeuroVoiceWindow(QMainWindow):
         self.canvas_wave.draw()
 
         # tooltip interactivo opcional
-        if MPLCURSORS_AVAILABLE:
-            mplcursors.cursor(self.ax_wave, hover=True)
+        # global MPLCURSORS_AVAILABLE_WAVE
+        # if MPLCURSORS_AVAILABLE_WAVE:
+        #     mplcursors.cursor(self.ax_wave, hover=True)
+        #     MPLCURSORS_AVAILABLE_WAVE = False  # evitar múltiples cursores
 
     def _plot_spec(self, mel_db, overlay=None):
         self.ax_spec.clear()
@@ -425,9 +423,15 @@ class NeuroVoiceWindow(QMainWindow):
         self.ax_spec.set_ylabel("Mel bins", fontsize=9)
         if overlay is not None:
             self.ax_spec.imshow(overlay, origin='lower', aspect='auto', alpha=0.45, cmap='jet')
-        self.fig_spec.colorbar(im, ax=self.ax_spec, fraction=0.046, pad=0.04)
-        self.fig_spec.tight_layout()
+        
+        if self.draw_bar:
+            self.fig_spec.colorbar(im, fraction=0.046, pad=0.04)
+            self.draw_bar = False
+            self.fig_spec.tight_layout()
+        
         self.canvas_spec.draw()
 
-        if MPLCURSORS_AVAILABLE:
-            mplcursors.cursor(self.ax_spec, hover=True)
+        # global MPLCURSORS_AVAILABLE_HEAT
+        # if MPLCURSORS_AVAILABLE_HEAT:
+        #     mplcursors.cursor(self.ax_spec, hover=True)
+        #     MPLCURSORS_AVAILABLE_HEAT = False  # evitar múltiples cursores
