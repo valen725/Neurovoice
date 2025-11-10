@@ -115,7 +115,7 @@ class NeuroVoiceWindow(QMainWindow):
         self.threshold_parkinson = 0.3
 
         self.robust_checkbox = QCheckBox("Modo robusto (promediar)")
-        self.robust_checkbox.setChecked(True)
+        self.robust_checkbox.setChecked(False)
 
         self.btn_predict = QPushButton("🔎 Analizar y Predecir")
         self.btn_predict.clicked.connect(self.on_predict)
@@ -129,7 +129,7 @@ class NeuroVoiceWindow(QMainWindow):
         self.btn_gradcam = QPushButton("🔥 Grad-CAM overlay")
         self.btn_gradcam.clicked.connect(self.on_gradcam)
 
-        l_inf.addWidget(self.robust_checkbox)
+        # l_inf.addWidget(self.robust_checkbox)
         l_inf.addWidget(self.btn_predict)
         l_inf.addWidget(self.prob_lbl)
         l_inf.addWidget(self.btn_export_pdf)
