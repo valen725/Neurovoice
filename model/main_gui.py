@@ -1,4 +1,4 @@
-from UI.gui import NeuroVoiceWindow
+from gui import NeuroVoiceWindow
 from PyQt6.QtWidgets import QApplication
 import sys
 
