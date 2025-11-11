@@ -2,7 +2,10 @@ import os
 import librosa
 import numpy as np
 import soundfile as sf
+from io import BytesIO
+
 from audio_io import Recorder, Player, save_wav_16k
+
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QPushButton, QLabel, QFileDialog,
@@ -315,8 +318,9 @@ class NeuroVoiceWindow(QMainWindow):
             from reportlab.pdfgen import canvas
             from reportlab.lib import colors
             from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, Image
             from datetime import datetime
+            from io import BytesIO  # <--- nuevo
 
             if not hasattr(self, 'last_result') or self.last_result is None:
                 QMessageBox.warning(self, "Sin resultado", "Primero realiza una predicción.")
@@ -341,7 +345,11 @@ class NeuroVoiceWindow(QMainWindow):
             story.append(Spacer(1, 8))
 
             # Diagnóstico principal
-            color = colors.green if "SALUDABLE" in self.last_result['prediction'] else (colors.orange if "MODERADO" in self.last_result['prediction'] else (colors.red if "ALTO" in self.last_result['prediction'] else colors.grey))
+            color = colors.green if "SALUDABLE" in self.last_result['prediction'] else (
+                colors.orange if "MODERADO" in self.last_result['prediction'] else (
+                    colors.red if "ALTO" in self.last_result['prediction'] else colors.grey
+                )
+            )
             diag_table = Table([[self.last_result['prediction']]], style=[
                 ('BACKGROUND', (0,0), (-1,-1), color),
                 ('TEXTCOLOR', (0,0), (-1,-1), colors.white),
@@ -376,12 +384,49 @@ class NeuroVoiceWindow(QMainWindow):
             story.append(Spacer(1, 10))
 
             # Advertencia
-            story.append(Paragraph("<font color='grey' size=9>IMPORTANTE: Este resultado es solo una herramienta de apoyo y no reemplaza la valoración médica profesional.</font>", styles['Normal']))
+            story.append(Paragraph(
+                "<font color='grey' size=9>IMPORTANTE: Este resultado es solo una herramienta de apoyo y no reemplaza la valoración médica profesional.</font>",
+                styles['Normal']
+            ))
+
+            # ---------- NUEVO: añadir las gráficas al PDF ----------
+
+            page_width, page_height = A4
+            max_width = page_width - doc.leftMargin - doc.rightMargin
+            max_height = page_height / 2  # para que no ocupen toda la página
+
+            def fig_to_image(figure):
+                """Convierte una figura de Matplotlib en un Image de reportlab."""
+                buf = BytesIO()
+                # Usamos bbox_inches='tight' para que corte bien la figura
+                figure.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+                buf.seek(0)
+                img = Image(buf)
+                # Ajustar tamaño máximo manteniendo proporción
+                img._restrictSize(max_width, max_height)
+                return img
+
+            # Gráfico de la señal de audio (waveform)
+            if hasattr(self, 'fig_wave') and self.fig_wave is not None:
+                story.append(Spacer(1, 16))
+                story.append(Paragraph("<b>Señal de audio</b>", styles['Heading2']))
+                story.append(Spacer(1, 6))
+                story.append(fig_to_image(self.fig_wave))
+
+            # Gráfico del espectrograma Mel / calor
+            if hasattr(self, 'fig_spec') and self.fig_spec is not None:
+                story.append(Spacer(1, 16))
+                story.append(Paragraph("<b>Espectrograma Mel (dB)</b>", styles['Heading2']))
+                story.append(Spacer(1, 6))
+                story.append(fig_to_image(self.fig_spec))
+
+            # ---------- FIN BLOQUE NUEVO ----------
 
             doc.build(story)
             QMessageBox.information(self, "PDF generado", f"Informe guardado en:\n{path}")
         except Exception as e:
             QMessageBox.critical(self, "Error al exportar PDF", str(e))
+
 
     def on_gradcam(self):
         if self.raw_audio is None:
