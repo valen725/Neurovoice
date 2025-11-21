@@ -21,6 +21,7 @@ warnings.filterwarnings('ignore')
 from architecture import create_model
 from data_loader import create_data_loaders
 from utils import EarlyStopping, MetricsTracker, save_checkpoint, load_checkpoint
+from losses import FocalLoss
 
 
 class NeuroVoiceTrainer:
@@ -80,7 +81,8 @@ class NeuroVoiceTrainer:
             augment_train=self.config['augment_train'],
             random_state=self.config['random_state'],
             num_workers=self.config['num_workers'],
-            verbose=False
+            verbose=False,
+            use_weighted_sampler=self.config.get('use_weighted_sampler', False)
         )
         
         self.train_loader = data_loaders['train']
@@ -95,12 +97,20 @@ class NeuroVoiceTrainer:
             dropout_rate=self.config['dropout_rate']
         ).to(self.device)
         
-        # Loss function con class weights si está configurado
-        if self.config['use_class_weights']:
-            class_weights = self.datasets['train'].get_class_weights().to(self.device)
-            self.criterion = nn.CrossEntropyLoss(weight=class_weights)
+        # Loss function: FocalLoss o CrossEntropy con optional weights
+        if self.config.get('use_focal_loss', False):
+            if self.config['use_class_weights']:
+                class_weights = self.datasets['train'].get_class_weights().to(self.device)
+                alpha = class_weights / class_weights.sum()  # normalize
+                self.criterion = FocalLoss(gamma=self.config.get('focal_gamma', 2.0), alpha=alpha)
+            else:
+                self.criterion = FocalLoss(gamma=self.config.get('focal_gamma', 2.0))
         else:
-            self.criterion = nn.CrossEntropyLoss()
+            if self.config['use_class_weights']:
+                class_weights = self.datasets['train'].get_class_weights().to(self.device)
+                self.criterion = nn.CrossEntropyLoss(weight=class_weights)
+            else:
+                self.criterion = nn.CrossEntropyLoss()
         
         # Optimizer
         if self.config['optimizer'] == 'adam':

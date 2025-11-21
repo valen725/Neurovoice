@@ -182,7 +182,8 @@ def create_data_loaders(metadata_file: str,
                        augment_train: bool = True,
                        random_state: int = 42,
                        num_workers: int = 4,
-                       verbose: bool = True) -> Dict[str, DataLoader]:
+                       verbose: bool = True,
+                       use_weighted_sampler: bool = False) -> Dict[str, DataLoader]:
     """
     Crea data loaders para entrenamiento, validación y test.
     
@@ -251,13 +252,33 @@ def create_data_loaders(metadata_file: str,
     )
     
     # Crear data loaders
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=num_workers,
-        pin_memory=True
-    )
+    if use_weighted_sampler:
+        # Calcular pesos inversos a la frecuencia de clase
+        labels = [train_dataset.df.iloc[i]['label_encoded'] for i in range(len(train_dataset))]
+        class_counts = np.bincount(labels)
+        class_weights = 1.0 / (class_counts + 1e-9)
+        sample_weights = [class_weights[l] for l in labels]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True
+        )
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=sampler,
+            shuffle=False,
+            num_workers=num_workers,
+            pin_memory=True
+        )
+    else:
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            pin_memory=True
+        )
     
     val_loader = DataLoader(
         val_dataset,
@@ -288,7 +309,8 @@ def create_data_loaders(metadata_file: str,
         'datasets': {
             'train': train_dataset,
             'val': val_dataset,
-            'test': test_dataset
+            'test': test_dataset,
+            'train_class_weights': class_weights if use_weighted_sampler else None
         }
     }
 

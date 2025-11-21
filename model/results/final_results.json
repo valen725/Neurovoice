@@ -1,6 +1,6 @@
 {
     "test_accuracy": 93.75,
-    "test_auc": 0.96875,
+    "test_auc": 0.984375,
     "classification_report": {
         "Healthy": {
             "precision": 0.8888888888888888,
@@ -28,7 +28,7 @@
             "support": 32.0
         }
     },
-    "best_epoch": 29,
+    "best_epoch": 40,
     "best_val_accuracy": 93.75,
-    "best_val_auc": 0.96875
+    "best_val_auc": 0.984375
 }
