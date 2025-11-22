@@ -1,0 +1,5 @@
+C:\Alejo\trabajos U\comunicaciones_1\neurovoice-repo\Neurovoice\model\audio_io.py
+C:\Alejo\trabajos U\comunicaciones_1\neurovoice-repo\Neurovoice\model\gradcam.py
+C:\Alejo\trabajos U\comunicaciones_1\neurovoice-repo\Neurovoice\model\inference.py
+C:\Alejo\trabajos U\comunicaciones_1\neurovoice-repo\Neurovoice\model\main_gui.py
+C:\Alejo\trabajos U\comunicaciones_1\neurovoice-repo\Neurovoice\model\preprocess.py

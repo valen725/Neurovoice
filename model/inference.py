@@ -6,7 +6,7 @@ import torch
 import librosa
 from pathlib import Path
 import json
-from model.architecture import create_model
+from architecture import create_model
 
 def load_default_config():
     """Carga configuración por defecto (idéntico a predict_fixed.py)"""
